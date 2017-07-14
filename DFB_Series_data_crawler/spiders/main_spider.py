@@ -1,6 +1,8 @@
 import scrapy
 import json
 import time
+from DFB_Series_data_crawler.items import episodedata
+from DFB_Series_data_crawler.items import seriesdata
 
 class main_spider(scrapy.Spider):
     name = "main"
@@ -13,6 +15,7 @@ class main_spider(scrapy.Spider):
             'http://www.soku.com/search_video/q_欢乐颂'
         ]
         print("[*] Start crawling")
+        # Micro and Macro?
         for url in urls:
             yield scrapy.Request(url=url, callback=self.soku_parse)
 
@@ -31,12 +34,29 @@ class main_spider(scrapy.Spider):
             yield scrapy.Request(url=link,callback=self.youkuindex_parse)
     def youkuindex_parse(self,response):
         # Index data: play times, sex ratio,..., etc.
-        data=[str(i) for i in response.css("script").re(r"\[\{.*\}\]")]
-        # 总播放量:12123,12341234
-        # print(len(response.xpath("//*[@id='youku']/div[1]/div/div[2]/div[1]/div/div[2]/ul/li/text()").extract()))
+                # 总播放量:12123,12341234
         totalplay, comments, thumpsup, thumpsdown, fav, temp= [eval("".join(i.split(":")[1].split(","))) for  i in response.xpath("//*[@id='youku']/div[1]/div/div[2]/div[1]/div/div[2]/ul/li/text()").extract()]
-        # print(totalplay,comments,thumpsup,thumpsdown, fav, temp)
+        raw_data = [str(i) for i in response.css("script").re(r"\[\{.*\}\]")]
+        play_data = json.loads(raw_data[0])[0]
+        usersratio_data = json.loads(raw_data[1])[0]
+        deviceratio_data = json.loads(raw_data[3])[0]
+
+        play_data['vv'][2].reverse()
+        name = play_data['name']
+        id = eval(name.split(" ")[1][1:])
+        start = time.mktime(time.strptime(play_data['vv'][1], "%Y-%m-%d"))
+        retri = time.mktime(time.strptime(play_data['vv'][0], "%Y-%m-%d"))
+        play_times = play_data['vv'][2]
+        sex_ratio = usersratio_data['sex']
+        age_ratio = usersratio_data['age']
+        dev_ratio = deviceratio_data['device']
+
         print("[+] Got data on Youku index about",response.xpath("//*[@id='baner']/div[3]/div/span/text()").extract_first())
+        # Item for data
+        yield episodedata(id=id,name=name,start_timestamp=start,retri_timestamp=retri,\
+                          comments=comments,fav=fav,thumps_up=thumpsup,thumps_down=thumpsdown,\
+                          sex_ratio=sex_ratio,age_ratio=age_ratio,total_play=totalplay,all_play=play_times)
+        # Crawl from search engine, douban, and weibo
     def searchengine_parse(self,response):
         pass
     def douban_parse(self,response):

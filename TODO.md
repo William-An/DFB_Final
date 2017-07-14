@@ -13,3 +13,5 @@ data=[str(i) for i in response.css("script").re(r"\[\{.*\}\]")]
 直接JSON输出
 jsobj=json.loads(data[0])[0]
 jsb = json.loads(data[1])[0]
+
+异步传输Search engine and weibo, douban， Item pipeline
