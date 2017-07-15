@@ -10,19 +10,25 @@ import scrapy
 
 class episodedata(scrapy.Item):
     # Micro
-    id = scrapy.Field()             # ID for SQL
-    name = scrapy.Field()           # episode name
-    start_timestamp = scrapy.Field()# The day(in UNIX timestamp) which this episode first played
-    retri_timestamp = scrapy.Field() # The day(in UNIX timestamp) which the data retrieved
-    comments = scrapy.Field()       # Number of comments
-    fav = scrapy.Field()            # Number of people who "like" it
-    thumps_up = scrapy.Field()      # Number of thumpsup
-    thumps_down = scrapy.Field()    # Number of thumpsdown
-    sex_ratio = scrapy.Field()      # Sex ratio of people who watch this episode, in list form
-    age_ratio = scrapy.Field()      # Same as sex ratio
-    total_play = scrapy.Field()     # Total play times
-    all_play = scrapy.Field()       # A list that contains everyday's play amount of this episode
+    id = scrapy.Field()                 # ID for SQL
+    name = scrapy.Field()               # episode name
+    start_timestamp = scrapy.Field()    # The day(in UNIX timestamp) which this episode first played
+    retri_timestamp = scrapy.Field()    # The day(in UNIX timestamp) which the data retrieved
+    comments = scrapy.Field()           # Number of comments
+    fav = scrapy.Field()                # Number of people who "like" it
+    thumps_up = scrapy.Field()          # Number of thumpsup
+    thumps_down = scrapy.Field()        # Number of thumpsdown
+    sex_ratio = scrapy.Field()          # Sex ratio of people who watch this episode, in list form
+    age_ratio = scrapy.Field()          # Same as sex ratio
+    total_play = scrapy.Field()         # Total play times
+    all_play = scrapy.Field()           # A list that contains everyday's play amount of this episode
+    douban_topics = scrapy.Field()      # The number of topics of this episode
+    douban_responses = scrapy.Field()   # The number of responses under all topics of this episode
     # TODO Weibo & Douban
 class seriesdata(scrapy.Item):
     # Macro
+    rate = scrapy.Field()
+    search_engine = scrapy.Field()
+    weibo = scrapy.Field()
+    # TODO more macro vars
     pass
