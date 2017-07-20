@@ -73,13 +73,7 @@ class micro_spider(scrapy.Spider):
     def doubancomment_finder(self,response):
         data = response.meta['data']
         self.logger.info("[*] Crawling comments links for"+data['name'])
-        try:
-            link = "https://movie.douban.com/j/discussion/episode_discussions?ep_id="+response.xpath("//*[@id='content']/div[2]/div[1]/div[7]/div[2]/div[1]/a[@data-num="+str(data['id'])+"]/@data-epid").extract_first()
-        except TypeError as err:
-            self.logger.error(data['name'])
-            self.logger.error(data['id'])
-            self.logger.error(response.xpath('//div[@class="mod"]/div[@class="bd"]/div[1]/a[@data-num='+str(data['id'])+']/@data-epid').extract_first())
-            self.logger.error(str(err))
+        link = "https://movie.douban.com/j/discussion/episode_discussions?ep_id="+response.xpath('//div[@class="mod"]/div[@class="bd"]/div[1]/a[@data-num='+str(data['id'])+']/@data-epid').extract_first()
         request = scrapy.Request(url=link, callback=self.douban_parser)
         request.meta['data'] = data
         yield request
