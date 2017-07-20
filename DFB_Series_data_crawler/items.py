@@ -20,6 +20,7 @@ class episodedata(scrapy.Item):
     thumps_down = scrapy.Field()        # Number of thumpsdown
     sex_ratio = scrapy.Field()          # Sex ratio of people who watch this episode, in list form
     age_ratio = scrapy.Field()          # Same as sex ratio
+    dev_ratio = scrapy.Field()
     total_play = scrapy.Field()         # Total play times
     all_play = scrapy.Field()           # A list that contains everyday's play amount of this episode
     douban_topics = scrapy.Field()      # The number of topics of this episode
@@ -27,8 +28,18 @@ class episodedata(scrapy.Item):
     # TODO Weibo & Douban
 class seriesdata(scrapy.Item):
     # Macro
-    rate = scrapy.Field()
-    search_engine = scrapy.Field()
-    weibo = scrapy.Field()
+    douban_rate = scrapy.Field()
+    douban_rateamount = scrapy.Field()
+    douban_rateratio = scrapy.Field()
+    douban_collections = scrapy.Field()
+    douban_wishes = scrapy.Field()
+    douban_doing = scrapy.Field()
+    name = scrapy.Field()               # episode name
+    start_timestamp = scrapy.Field()    # The day(in UNIX timestamp) which this episode first played
+    retri_timestamp = scrapy.Field()    # The day(in UNIX timestamp) which the data retrieved
+    sex_ratio = scrapy.Field()          # Sex ratio of people who watch this episode, in list form
+    age_ratio = scrapy.Field()          # Same as sex ratio
+    dev_ratio = scrapy.Field()
+    all_play = scrapy.Field()           # A list that contains everyday's play amount of this episode
     # TODO more macro vars
     pass

@@ -55,7 +55,7 @@ class micro_spider(scrapy.Spider):
         # Item for data
         youkudata = episodedata(id=id,name=name,start_timestamp=start,retri_timestamp=retri,\
                           comments=comments,fav=fav,thumps_up=thumpsup,thumps_down=thumpsdown,\
-                          sex_ratio=sex_ratio,age_ratio=age_ratio,total_play=totalplay,all_play=play_times)
+                          sex_ratio=sex_ratio,age_ratio=age_ratio,dev_ratio=dev_ratio,total_play=totalplay,all_play=play_times)
         # douban.com/search?q=欢乐颂
         request = scrapy.Request(url="http://douban.com/search?q="+youkudata['name'].split(" ")[0],callback=self.douban_finder, dont_filter=True)   # Dont_filter allow scrapy to crawl same page for different epsiodes
         request.meta['data'] = youkudata
@@ -73,7 +73,13 @@ class micro_spider(scrapy.Spider):
     def doubancomment_finder(self,response):
         data = response.meta['data']
         self.logger.info("[*] Crawling comments links for"+data['name'])
-        link = "https://movie.douban.com/j/discussion/episode_discussions?ep_id="+response.xpath("//*[@id='content']/div[2]/div[1]/div[7]/div[2]/div[1]/a[@data-num="+str(data['id'])+"]/@data-epid").extract_first()
+        try:
+            link = "https://movie.douban.com/j/discussion/episode_discussions?ep_id="+response.xpath("//*[@id='content']/div[2]/div[1]/div[7]/div[2]/div[1]/a[@data-num="+str(data['id'])+"]/@data-epid").extract_first()
+        except TypeError as err:
+            self.logger.error(data['name'])
+            self.logger.error(data['id'])
+            self.logger.error(response.xpath('//div[@class="mod"]/div[@class="bd"]/div[1]/a[@data-num='+str(data['id'])+']/@data-epid').extract_first())
+            self.logger.error(str(err))
         request = scrapy.Request(url=link, callback=self.douban_parser)
         request.meta['data'] = data
         yield request
@@ -94,7 +100,82 @@ class micro_spider(scrapy.Spider):
 
 
 class macro_spider(scrapy.Spider):
-    pass
+    name = "macro"
+    def start_requests(self):
+        with open(self.list) as listFile:
+            tvseries_list = listFile.readlines()
+        urls = ['http://www.soku.com/search_video/q_'+i.strip() for i in tvseries_list]
+        #urls = [
+        #    'http://www.soku.com/search_video/q_欢乐颂'
+        #]
+        self.logger.info("[*] Start crawling")
+        # Micro and Macro?
+        for url in urls:
+            yield scrapy.Request(url=url, callback=self.soku_parse)
+    def soku_parse(self, response):
+        link = response.xpath("/html/body/div[3]/div[3]/div/div/div/div[2]/div[1]/div[4]/div[1]/ul/li[1]/a/@href").extract_first()
+        link = "http://index.youku.com/vr_keyword/id_"+link # Get link to youku index
+        self.logger.info("[+] Got link at soku site for: "+response.xpath("/html/body/div[3]/div[3]/div/div/div/div[2]/div[1]/div[4]/div[1]/ul/li[1]/a/@_log_title").extract_first()+" Link: "+link)
+        yield scrapy.Request(url=link,callback=self.youkuindex_referer)
+    def youkuindex_referer(self, response): # Refer to TV Series page instead of just episode page
+        link = response.xpath("//*[@id=\"baner\"]/div[3]/div/div/a[3]/@href").extract_first()
+        self.logger.info("[+] Got links for TV series: "+response.xpath('//*[@id="baner"]/div[3]/div/span/text()').extract_first().split(" ")[0])
+        yield scrapy.Request(url=link,callback=self.youkuindex_parse)
+    def youkuindex_parse(self,response):
+        raw_data = [str(i) for i in response.css("script").re(r"\[\{.*\}\]")]
+        play_data = json.loads(raw_data[1])[0]
+        usersratio_data = json.loads(raw_data[2])[0]
+        deviceratio_data = json.loads(raw_data[4])[0]
+
+        play_data['vv'][2].reverse()
+        name = play_data['name'].split(" ")[0]
+        start = time.mktime(time.strptime(play_data['vv'][1], "%Y-%m-%d"))
+        retri = time.mktime(time.strptime(play_data['vv'][0], "%Y-%m-%d"))
+        play_times = play_data['vv'][2]
+        sex_ratio = usersratio_data['sex']
+        age_ratio = usersratio_data['age']
+        dev_ratio = deviceratio_data['device']
+
+        self.logger.info("[+] Got data on Youku index about "+response.xpath('//*[@id="add_shows_name"]').extract_first())
+        # Item for data
+        youkudata = seriesdata(name=name,start_timestamp=start,retri_timestamp=retri,\
+                                sex_ratio=sex_ratio,age_ratio=age_ratio,dev_ratio=dev_ratio,\
+                                all_play=play_times)
+        # douban.com/search?q=欢乐颂
+        request = scrapy.Request(url="http://douban.com/search?q="+youkudata['name'],callback=self.douban_finder, dont_filter=True)   # Dont_filter allow scrapy to crawl same page for different epsiodes
+        request.meta['data'] = youkudata
+        self.logger.info("[*] Switching to Douban, "+youkudata['name'])
+        yield request
+        # Crawl from search engine, douban, and weibo
+    def douban_finder(self,response):
+        data = response.meta['data']
+        link = response.xpath("//div[@class='content'][1]/div/h3/a/@href").extract_first()
+        try:
+            request = scrapy.Request(url=link,callback=self.douban_rateparser, dont_filter=True)
+        except TypeError as err:
+            self.logger.error("Error at "+data['name'])
+            self.logger.error(str(err))
+            self.logger.error(str(data))
+        request.meta['data'] = data
+        self.logger.info("[*] Crawling link for "+data['name'])
+        yield request
+        # weibo_cookies = util.cookies2dict(self.weibo_cookies)
+    def douban_rateparser(self,response):
+        data = response.meta['data']
+        self.logger.info("[*] Crawling data from Douban for "+data['name'])
+        data['douban_rateratio'] = response.xpath('//*[@id="interest_sectl"]/div/div[3]/div/span[@class="rating_per"]/text()').extract()
+        data['douban_rate'] = response.xpath('//*[@id="interest_sectl"]/div/div[2]/strong/text()').extract_first()
+        data['douban_rateamount'] = response.xpath('//*[@id="interest_sectl"]/div/div[2]/div/div[2]/a/span/text()').extract_first()
+        request = scrapy.Request(url=response.url+"collections",callback=self.douban_collectionparser)
+        request.meta['data'] = data
+        yield request
+    def douban_collectionparser(self,response):
+        data = response.meta['data']
+        self.logger.info("[*] Crawling the amount of collections, wishes, and doing of "+data['name'])
+        data['douban_collections'] = response.xpath('//*[@id="collections_bar"]/span/text()').extract_first()
+        data['douban_wishes'] = response.xpath('//*[@id="wishes_bar"]/span/a/text()').extract_first()
+        data['douban_doing'] = response.xpath('//*[@id="doings_bar"]/span/a/text()').extract_first()
+        yield data
 class util():
     @staticmethod
     def cookies2dict(self,cookies):
@@ -102,3 +183,5 @@ class util():
         cookies = [i.strip() for i in cookies]
         cookies = [tuple(i.split("=")) for  i in cookies]
         return dict(cookies)
+    def filternum(self,string):
+        pass
