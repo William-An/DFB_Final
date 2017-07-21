@@ -166,9 +166,9 @@ class macro_spider(scrapy.Spider):
     def douban_collectionparser(self,response):
         data = response.meta['data']
         self.logger.info("[*] Crawling the amount of collections, wishes, and doing of "+data['name'])
-        data['douban_collections'] = response.xpath('//*[@id="collections_bar"]/span/text()').extract_first()
-        data['douban_wishes'] = response.xpath('//*[@id="wishes_bar"]/span/a/text()').extract_first()
-        data['douban_doing'] = response.xpath('//*[@id="doings_bar"]/span/a/text()').extract_first()
+        data['douban_collections'] = util.filterChinese(response.xpath('//*[@id="collections_bar"]/span/text()').extract_first())
+        data['douban_wishes'] = util.filterChinese(response.xpath('//*[@id="wishes_bar"]/span/a/text()').extract_first())
+        data['douban_doing'] = util.filterChinese(response.xpath('//*[@id="doings_bar"]/span/a/text()').extract_first())
         data['baidu_search'] = []#[0 for i in range(((data['retri_timestamp'])-(data['start_timestamp']))/86400+1)]  #[0...0]
 
         request = scrapy.Request(url="https://www.baidu.com/s?wd="+data['name']+"&gpc=stf="+str(data['start_timestamp'])+","+str(data['start_timestamp'])+"|stftype=2",callback=self.baidu_engine)
