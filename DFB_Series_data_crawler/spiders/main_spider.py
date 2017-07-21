@@ -169,25 +169,25 @@ class macro_spider(scrapy.Spider):
         data['douban_collections'] = response.xpath('//*[@id="collections_bar"]/span/text()').extract_first()
         data['douban_wishes'] = response.xpath('//*[@id="wishes_bar"]/span/a/text()').extract_first()
         data['douban_doing'] = response.xpath('//*[@id="doings_bar"]/span/a/text()').extract_first()
-        #data['baidu_search'] = [0 for i in range(((data['retri_timestamp'])-(data['start_timestamp']))/86400+1)]  #[0...0]
+        data['baidu_search'] = []#[0 for i in range(((data['retri_timestamp'])-(data['start_timestamp']))/86400+1)]  #[0...0]
 
         request = scrapy.Request(url="https://www.baidu.com/s?wd="+data['name']+"&gpc=stf="+str(data['start_timestamp'])+","+str(data['start_timestamp'])+"|stftype=2",callback=self.baidu_engine)
         request.meta['data'] = data
         request.meta['next_stamp'] = data['start_timestamp']+86400
         yield request
-        print("special tag")
     def baidu_engine(self,response):
         data = response.meta['data']
         next = response.meta['next_stamp']
-        if abs(data['retri_timestamp']-next) < 100:
+        if data['retri_timestamp']<next:
             # Reach the end
             self.logger.info("[+] Crawled baidu search result for "+data['name'])
             yield data
-        data['baidu_search'].append(util.filterChinese(response.xpath('//div[@class="nums"]/text()').extract_first()))
-        request = scrapy.Request(url="https://www.baidu.com/s?wd="+data['name']+"&gpc=stf="+str(next)+","+str(next)+"|stftype=2",callback=self.baidu_engine)
-        request.meta['data'] = data
-        request.meta['next_stamp'] = next+86400
-        yield request
+        else:
+            data['baidu_search'].append(util.filterChinese(response.xpath('//div[@class="nums"]/text()').extract_first()))
+            request = scrapy.Request(url="https://www.baidu.com/s?wd="+data['name']+"&gpc=stf="+str(next)+","+str(next)+"|stftype=2",callback=self.baidu_engine)
+            request.meta['data'] = data
+            request.meta['next_stamp'] = next+86400
+            yield request
 
 class util():
     @staticmethod

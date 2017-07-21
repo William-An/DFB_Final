@@ -3,7 +3,7 @@ This git project is for DFB Data mining competition. It contains a crawler based
 
 ##  DFB_Series_data_crawler
 The crawler.  
-To activate it, run `scrapy crawl micro`  
+To activate spiders, run `scrapy crawl -o OUTPUT -a list=tv.txt micro`  or `scrapy crawl -o OUTPUT -a list=tv.txt macro`
 For more information, [Scrapy Docs](docs.scrapy.org)
 
 ## Virtualenv
