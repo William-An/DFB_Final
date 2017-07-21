@@ -41,5 +41,6 @@ class seriesdata(scrapy.Item):
     age_ratio = scrapy.Field()          # Same as sex ratio
     dev_ratio = scrapy.Field()
     all_play = scrapy.Field()           # A list that contains everyday's play amount of this episode
+    baidu_search = scrapy.Field()
     # TODO more macro vars
     pass
